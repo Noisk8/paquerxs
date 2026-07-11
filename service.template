@@ -1,2 +1,2 @@
 type: buildservice
-buildservice-image: node20
+buildservice-image: tools/node20
