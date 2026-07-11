@@ -1,5 +1,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const colectivos = [
   'Paquerxs del Parkway',
