@@ -7,3 +7,4 @@ pacas.db-wal
 *.log
 .DS_Store
 package-lock.json
+setup-toolforge.sh
