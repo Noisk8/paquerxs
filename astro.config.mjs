@@ -11,7 +11,12 @@ export default defineConfig({
     port: parseInt(process.env.PORT || '4321')
   },
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    build: {
+      rollupOptions: {
+        external: ['better-sqlite3']
+      }
+    }
   },
 
   adapter: node({
