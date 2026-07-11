@@ -34,7 +34,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { username, password } = body;
 
     const adminUser = process.env.ADMIN_USER || 'admin';
-    const adminPass = process.env.ADMIN_PASS || 'pacas2025';
+    const adminPass = process.env.ADMIN_PASS;
+    const isProd = !!process.env.TOOLSDB_HOST;
+
+    if (!adminPass) {
+      console.error('ADMIN_PASS not set in environment');
+      return new Response(JSON.stringify({ error: 'Configuracion del servidor incompleta' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (isProd && adminPass === 'pacas2025') {
+      console.error('WARNING: Using default ADMIN_PASS in production!');
+    }
 
     if (username !== adminUser || password !== adminPass) {
       return new Response(JSON.stringify({ error: 'Credenciales incorrectas' }), {

@@ -14,7 +14,10 @@ export const GET: APIRoute = async ({ url }) => {
       pagination: { total, limit, offset, hasMore: offset + limit < total },
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      },
     });
   } catch (error) {
     console.error('Error fetching pacas:', error);

@@ -21,6 +21,11 @@ function logQuery(label: string, ms: number) {
   }
 }
 
+function dbError(operation: string, error: unknown) {
+  const msg = error instanceof Error ? error.message : String(error);
+  console.error(`[DB ERROR] ${operation}: ${msg}`);
+}
+
 export function getQueryStats() {
   return { total: queryCount, slow: slowQueryCount, slowThresholdMs: SLOW_THRESHOLD_MS };
 }
