@@ -1,16 +1,9 @@
----
-import Layout from '../layouts/Layout.astro';
-
-export const prerender = false;
----
-
-<Layout titulo="Terminos de Uso">
+<template>
   <article class="max-w-3xl mx-auto">
     <h1 class="text-3xl font-bold mb-2 text-stone-800 dark:text-stone-100">Terminos de Uso</h1>
     <p class="text-stone-500 dark:text-stone-400 text-lg mt-0">Politica de datos, privacidad y licencia</p>
 
     <section class="mt-8 space-y-6 text-stone-700 dark:text-stone-300 leading-relaxed">
-
       <h2 class="text-2xl font-bold mt-8 text-stone-800 dark:text-stone-100">1. Datos de geolocalizacion</h2>
       <p>
         Esta aplicacion recopila y muestra <strong>coordenadas geograficas</strong> (latitud y longitud)
@@ -18,9 +11,7 @@ export const prerender = false;
         proporcionados de manera <strong>voluntaria</strong> por los participantes de los colectivos
         de pacas digestoras.
       </p>
-      <p>
-        Las coordenadas se utilizan exclusivamente para:
-      </p>
+      <p>Las coordenadas se utilizan exclusivamente para:</p>
       <ul class="list-disc pl-6 space-y-1">
         <li>Visualizar la ubicacion de las pacas en el mapa interactivo</li>
         <li>Monitorear la distribucion geografica de la red de pacas en Teusaquillo</li>
@@ -55,9 +46,7 @@ export const prerender = false;
         <li><strong>Crear</strong>: producir trabajos derivados a partir de los datos</li>
         <li><strong>Usar</strong>: utilizar los datos con cualquier proposito, incluyendo comercial</li>
       </ul>
-      <p>
-        Cualquier persona o institucion puede reutilizar estos datos, siempre que:
-      </p>
+      <p>Cualquier persona o institucion puede reutilizar estos datos, siempre que:</p>
       <ul class="list-disc pl-6 space-y-1">
         <li>Se atribuya el autor original (Paquerxs Teusaquillo / Wikimedia Colombia)</li>
         <li>Si se modifica o transforma, se comparta bajo la misma licencia ODbL</li>
@@ -100,4 +89,4 @@ export const prerender = false;
       </div>
     </section>
   </article>
-</Layout>
+</template>
