@@ -1,12 +1,13 @@
-name: Deploy to Node.js Hosting
+name: Build & Verify
 
 on:
   push:
     branches: [github]
-  workflow_dispatch:
+  pull_request:
+    branches: [github]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,23 +18,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: yarn
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
 
       - name: Build
-        run: npm run build
-        env:
-          TOOLSDB_HOST: ${{ secrets.TOOLSDB_HOST }}
-          TOOLSDB_USER: ${{ secrets.TOOLSDB_USER }}
-          TOOLSDB_PASSWORD: ${{ secrets.TOOLSDB_PASSWORD }}
-          TOOLSDB_DATABASE: ${{ secrets.TOOLSDB_DATABASE }}
-          ADMIN_USER: ${{ secrets.ADMIN_USER }}
-          ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+        run: yarn build
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
+      - name: Run tests
+        run: yarn test
+        env:
+          ADMIN_USER: admin
+          ADMIN_PASS: test123

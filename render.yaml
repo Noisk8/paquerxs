@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: paquerxs
+    runtime: node
+    plan: free
+    buildCommand: yarn install && yarn build
+    startCommand: node dist/server/entry.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        generateValue: true
+      - key: TOOLSDB_HOST
+        sync: false
+      - key: TOOLSDB_USER
+        sync: false
+      - key: TOOLSDB_PASSWORD
+        sync: false
+      - key: TOOLSDB_DATABASE
+        sync: false
