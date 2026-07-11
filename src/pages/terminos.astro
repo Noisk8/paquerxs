@@ -1,0 +1,103 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+export const prerender = false;
+---
+
+<Layout titulo="Terminos de Uso">
+  <article class="max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold mb-2 text-stone-800 dark:text-stone-100">Terminos de Uso</h1>
+    <p class="text-stone-500 dark:text-stone-400 text-lg mt-0">Politica de datos, privacidad y licencia</p>
+
+    <section class="mt-8 space-y-6 text-stone-700 dark:text-stone-300 leading-relaxed">
+
+      <h2 class="text-2xl font-bold mt-8 text-stone-800 dark:text-stone-100">1. Datos de geolocalizacion</h2>
+      <p>
+        Esta aplicacion recopila y muestra <strong>coordenadas geograficas</strong> (latitud y longitud)
+        de las pacas digestoras ubicadas en la localidad de Teusaquillo, Bogota. Estos datos son
+        proporcionados de manera <strong>voluntaria</strong> por los participantes de los colectivos
+        de pacas digestoras.
+      </p>
+      <p>
+        Las coordenadas se utilizan exclusivamente para:
+      </p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>Visualizar la ubicacion de las pacas en el mapa interactivo</li>
+        <li>Monitorear la distribucion geografica de la red de pacas en Teusaquillo</li>
+        <li>Facilitar la coordinacion entre colectivos</li>
+      </ul>
+      <p>
+        <strong>No se recopilan datos de ubicacion del usuario</strong> que accede a la aplicacion.
+        Solo se registran las coordenadas de las pacas, no la posicion de quien las consulta.
+      </p>
+
+      <h2 class="text-2xl font-bold mt-8 text-stone-800 dark:text-stone-100">2. Uso pedagogico</h2>
+      <p>
+        Los datos recopilados en esta plataforma tienen como proposito principal el
+        <strong>fin pedagogico y de divulgacion</strong>. Se buscan los siguientes objetivos:
+      </p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>Ensenar sobre la tecnologia de pacas digestoras como metodo de compostaje anaerobico</li>
+        <li>Promover la conciencia ambiental y el manejo adecuado de residuos organicos</li>
+        <li>Documentar la experiencia de los colectivos ciudadanos en Teusaquillo</li>
+        <li>Contribuir al conocimiento abierto sobre biodigestion urbana</li>
+      </ul>
+
+      <h2 class="text-2xl font-bold mt-8 text-stone-800 dark:text-stone-100">3. Datos abiertos</h2>
+      <p>
+        Esta aplicacion se adhiere a los principios de <strong>datos abiertos</strong>. Los datos
+        publicados estan disponibles bajo la licencia
+        <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Open Data Commons Open Database License (ODbL)</a>,
+        lo que permite:
+      </p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li><strong>Compartir</strong>: copiar, distribuir y usar los datos libremente</li>
+        <li><strong>Crear</strong>: producir trabajos derivados a partir de los datos</li>
+        <li><strong>Usar</strong>: utilizar los datos con cualquier proposito, incluyendo comercial</li>
+      </ul>
+      <p>
+        Cualquier persona o institucion puede reutilizar estos datos, siempre que:
+      </p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>Se atribuya el autor original (Paquerxs Teusaquillo / Wikimedia Colombia)</li>
+        <li>Si se modifica o transforma, se comparta bajo la misma licencia ODbL</li>
+      </ul>
+      <p>
+        Los datos estan disponibles a traves de la API publica de la aplicacion
+        (<code class="bg-stone-100 dark:bg-stone-700 px-1.5 py-0.5 rounded text-sm">GET /api/pacas</code>)
+        y en la
+        <a href="https://paquerxs-teusaquillo.wikibase.cloud/" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Wikibase Paquerxs</a>.
+      </p>
+
+      <h2 class="text-2xl font-bold mt-8 text-stone-800 dark:text-stone-100">4. Responsabilidad</h2>
+      <p>
+        Los datos de ubicacion y peso de las pacas son <strong>estimaciones proporcionadas por los
+        participantes</strong> y pueden no ser precisos. Esta aplicacion no se responsabiliza por
+        decisiones tomadas con base en estos datos. Se recomienda verificar la informacion directamente
+        con el colectivo correspondiente.
+      </p>
+
+      <h2 class="text-2xl font-bold mt-8 text-stone-800 dark:text-stone-100">5. Cookies y sesiones</h2>
+      <p>
+        Esta aplicacion utiliza <strong>cookies de sesion</strong> unicamente para el acceso
+        administrativo. No se utilizan cookies de rastreo, publicidad o analiticas. Las sesiones
+        administrativas expiran automaticamente despues de 24 horas.
+      </p>
+
+      <h2 class="text-2xl font-bold mt-8 text-stone-800 dark:text-stone-100">6. Contacto</h2>
+      <p>
+        Para preguntas sobre estos terminos o sobre el uso de los datos, contacta a
+        <strong>Wikimedia Colombia</strong> o a los colectivos de
+        <a href="https://colombianidadur.wixsite.com/paquerxsbogota" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Paquerxs Bogota</a>.
+      </p>
+
+      <div class="mt-8 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800 text-sm">
+        <p class="m-0">
+          <strong>Fecha de vigencia:</strong> Julio 2026 &middot;
+          <strong>Licencia del codigo:</strong> GPL-3.0-or-later &middot;
+          <strong>Licencia de datos:</strong> ODbL-1.0
+        </p>
+      </div>
+    </section>
+  </article>
+</Layout>
