@@ -4,3 +4,5 @@ pacas.db
 .env
 *.log
 .DS_Store
+pacas.db-shm
+pacas.db-wal

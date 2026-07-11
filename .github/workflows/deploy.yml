@@ -1,0 +1,39 @@
+name: Deploy to Node.js Hosting
+
+on:
+  push:
+    branches: [github]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          TOOLSDB_HOST: ${{ secrets.TOOLSDB_HOST }}
+          TOOLSDB_USER: ${{ secrets.TOOLSDB_USER }}
+          TOOLSDB_PASSWORD: ${{ secrets.TOOLSDB_PASSWORD }}
+          TOOLSDB_DATABASE: ${{ secrets.TOOLSDB_DATABASE }}
+          ADMIN_USER: ${{ secrets.ADMIN_USER }}
+          ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
