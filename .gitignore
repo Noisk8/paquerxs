@@ -1,8 +1,9 @@
 node_modules/
 dist/
 pacas.db
+pacas.db-shm
+pacas.db-wal
 .env
 *.log
 .DS_Store
-pacas.db-shm
-pacas.db-wal
+package-lock.json
