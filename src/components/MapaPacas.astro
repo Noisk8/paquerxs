@@ -1,0 +1,176 @@
+---
+import type { Paca } from '../lib/types';
+
+interface Props {
+  pacas: Paca[];
+}
+
+const { pacas } = Astro.props;
+
+const pacasConCoords = pacas.filter(p => p.coordenadas_lat != null && p.coordenadas_lng != null);
+
+const colectivos = [...new Set(pacasConCoords.map(p => p.colectivo))].sort();
+
+const pacasJSON = JSON.stringify(pacasConCoords);
+const colectivosJSON = JSON.stringify(colectivos);
+---
+
+<div class="space-y-3 mb-4" id="mapa-filtros" style="opacity:0">
+  <div class="flex flex-col sm:flex-row gap-3">
+    <div class="flex-1">
+      <select
+        id="filtro-colectivo"
+        class="w-full rounded-lg border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 border px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
+      >
+        <option value="">Todos los colectivos</option>
+        {colectivos.map(c => (
+          <option value={c}>{c}</option>
+        ))}
+      </select>
+    </div>
+    <div class="flex-1">
+      <input
+        type="text"
+        id="filtro-nombre"
+        placeholder="Buscar paca por nombre..."
+        class="w-full rounded-lg border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 border px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+      />
+    </div>
+    <div id="contador-marcas" class="flex items-center text-sm text-stone-500 dark:text-stone-400 px-2 whitespace-nowrap">
+      {pacasConCoords.length} pacas en mapa
+    </div>
+  </div>
+</div>
+
+<div id="mapa-skeleton" class="relative w-full h-[400px] sm:h-[500px] rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700">
+  <div class="skeleton-map absolute inset-0 bg-stone-200 dark:bg-stone-700"></div>
+  <div class="absolute inset-0 flex items-center justify-center">
+    <div class="flex flex-col items-center gap-2">
+      <svg class="skeleton-pulse h-8 w-8 text-stone-400 dark:text-stone-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+      </svg>
+      <span class="skeleton-pulse text-sm text-stone-400 dark:text-stone-500">Cargando mapa...</span>
+    </div>
+  </div>
+</div>
+
+<div id="mapa-pacas" class="w-full h-[400px] sm:h-[500px] rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 z-0 hidden"></div>
+
+<script is:inline define:vars={{ pacasJSON, colectivosJSON }}>
+  const pacas = JSON.parse(pacasJSON);
+  const colectivos = JSON.parse(colectivosJSON);
+
+  const mapEl = document.getElementById('mapa-pacas');
+  const skeletonEl = document.getElementById('mapa-skeleton');
+  const filtrosEl = document.getElementById('mapa-filtros');
+
+  const map = L.map('mapa-pacas').setView([4.64, -74.075], 14);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  }).addTo(map);
+
+  map.whenReady(function() {
+    skeletonEl.classList.add('hidden');
+    mapEl.classList.remove('hidden');
+    filtrosEl.style.opacity = '1';
+    filtrosEl.style.transition = 'opacity 0.3s ease';
+    map.invalidateSize();
+  });
+
+  const colores = {
+    'Paquerxs del Parkway': '#059669',
+    'Paquerxs de San Luis': '#2563eb',
+    'Paquerxs del Neuque': '#d97706',
+    'Paquerxs de La Marchita': '#dc2626',
+    'Paquerxs Armenia': '#7c3aed',
+  };
+  const defaultColor = '#6b7280';
+
+  let markers = [];
+
+  function getColor(colectivo) {
+    return colores[colectivo] || defaultColor;
+  }
+
+  function createIcon(color) {
+    return L.icon({
+      iconUrl: '/icons/paca.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      className: 'custom-marker',
+    });
+  }
+
+  function createPopup(paca) {
+    var peso = paca.peso != null ? paca.peso + ' kg' : 'N/A';
+    var participantes = paca.participantes != null ? paca.participantes : 'N/A';
+    var fecha = new Date(paca.fecha_inicio).toLocaleDateString('es-CO', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+    return '<div style="font-family:system-ui;min-width:200px;">' +
+      '<h3 style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#065f46;">' + paca.nombre + '</h3>' +
+      '<div style="font-size:13px;color:#44403c;line-height:1.6;">' +
+      '<p style="margin:0;"><b>Colectivo:</b> ' + paca.colectivo + '</p>' +
+      '<p style="margin:0;"><b>Peso:</b> ' + peso + '</p>' +
+      '<p style="margin:0;"><b>Fecha:</b> ' + fecha + '</p>' +
+      '<p style="margin:0;"><b>Participantes:</b> ' + participantes + '</p>' +
+      (paca.informacion ? '<p style="margin:4px 0 0 0;font-style:italic;color:#78716c;">' + paca.informacion + '</p>' : '') +
+      '</div></div>';
+  }
+
+  function renderMarkers(filtroColectivo, filtroNombre) {
+    markers.forEach(function(m) { map.removeLayer(m); });
+    markers = [];
+
+    var filtradas = pacas.filter(function(p) {
+      var matchColectivo = !filtroColectivo || p.colectivo === filtroColectivo;
+      var matchNombre = !filtroNombre || p.nombre.toLowerCase().indexOf(filtroNombre.toLowerCase()) !== -1;
+      return matchColectivo && matchNombre;
+    });
+
+    filtradas.forEach(function(paca) {
+      var color = getColor(paca.colectivo);
+      var marker = L.marker([paca.coordenadas_lat, paca.coordenadas_lng], { icon: createIcon(color) }).addTo(map);
+      marker.bindPopup(createPopup(paca));
+      markers.push(marker);
+    });
+
+    document.getElementById('contador-marcas').textContent = filtradas.length + ' pacas en mapa';
+
+    if (filtradas.length > 0) {
+      var bounds = L.latLngBounds(filtradas.map(function(p) { return [p.coordenadas_lat, p.coordenadas_lng]; }));
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  }
+
+  renderMarkers('', '');
+
+  document.getElementById('filtro-colectivo').addEventListener('change', function(e) {
+    var nombre = document.getElementById('filtro-nombre').value;
+    renderMarkers(e.target.value, nombre);
+  });
+
+  document.getElementById('filtro-nombre').addEventListener('input', function(e) {
+    var colectivo = document.getElementById('filtro-colectivo').value;
+    renderMarkers(colectivo, e.target.value);
+  });
+</script>
+
+<style>
+  #mapa-pacas {
+    background: #e5e5e5;
+  }
+  :global(.custom-marker) {
+    background: transparent !important;
+    border: none !important;
+  }
+  :global(.leaflet-popup-content-wrapper) {
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  :global(.leaflet-popup-content) {
+    margin: 12px 16px;
+  }
+</style>

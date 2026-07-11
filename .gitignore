@@ -1,0 +1,6 @@
+node_modules/
+dist/
+pacas.db
+.env
+*.log
+.DS_Store

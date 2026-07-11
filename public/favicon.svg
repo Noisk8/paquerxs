@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- soil layer -->
+  <ellipse cx="16" cy="26" rx="14" ry="4" fill="#8B5E3C"/>
+  <!-- stem -->
+  <path d="M16 24 C16 18 14 14 16 8" stroke="#2D7A3A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- left leaf -->
+  <path d="M16 14 C12 12 8 10 10 6 C14 8 15 11 16 14" fill="#4CAF50"/>
+  <!-- right leaf -->
+  <path d="M16 10 C20 8 24 6 22 2 C18 4 17 7 16 10" fill="#66BB6A"/>
+  <!-- small root lines -->
+  <path d="M14 26 C12 28 10 29 8 28" stroke="#A0714F" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <path d="M18 26 C20 28 22 29 24 28" stroke="#A0714F" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>
