@@ -90,13 +90,14 @@ async function getMariaDb() {
   if (mariadbPool) return mariadbPool;
   const mariadb = await import('mariadb');
   mariadbPool = mariadb.default.createPool({
-    host: process.env.TOOLSDB_HOST,
-    user: process.env.TOOLSDB_USER,
-    password: process.env.TOOLSDB_PASSWORD,
+    host: process.env.TOOLSDB_HOST || 'tools.db.svc.wikimedia.cloud',
+    user: process.env.TOOLSDB_USER || process.env.TOOL_TOOLSDB_USER,
+    password: process.env.TOOLSDB_PASSWORD || process.env.TOOL_TOOLSDB_PASSWORD,
     database: process.env.TOOLSDB_DATABASE,
     connectionLimit: 5,
     charset: 'utf8mb4',
   });
+  console.log(`[DB] Connecting to MariaDB: host=${mariadbPool.config?.connectionConfig?.host} user=${mariadbPool.config?.connectionConfig?.user} db=${mariadbPool.config?.connectionConfig?.database}`);
   if (!mariadbReady) {
     const conn = await mariadbPool.getConnection();
     await conn.query(`
