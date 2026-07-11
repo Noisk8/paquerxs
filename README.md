@@ -258,11 +258,62 @@ toolforge webservice --service pacas-app stop
 toolforge webservice --service pacas-app shell
 ```
 
-### URL de producción
+### URL de producción (Toolforge)
 
 ```
 https://<usuario>-tools.wmcloud.org/pacas-app/
 ```
+
+## Despliegue en Render.com
+
+### Opción 1: Blueprint (recomendado)
+
+1. Subir el repositorio a GitHub (rama `github`)
+2. En Render: **New > Blueprint** → seleccionar el repo
+3. Render detecta `render.yaml` automáticamente
+4. Configurar variables de entorno en el dashboard:
+   - `ADMIN_USER` → `admin`
+   - `ADMIN_PASS` → tu contraseña segura
+   - `TOOLSDB_HOST` → host de tu BD (opcional, sin esto usa SQLite)
+
+### Opción 2: Manual
+
+1. En Render: **New > Web Service**
+2. Conectar repositorio GitHub
+3. Configurar:
+   - **Build Command:** `yarn install && yarn build`
+   - **Start Command:** `node dist/server/entry.mjs`
+   - **Node Version:** 22
+4. Agregar variables de entorno en Environment:
+   - `ADMIN_USER` = `admin`
+   - `ADMIN_PASS` = `tu-contraseña-segura`
+
+### Variables de entorno (Render)
+
+| Variable | Requerida | Descripción |
+|---|---|---|
+| `ADMIN_USER` | Sí | Usuario admin |
+| `ADMIN_PASS` | Sí | Password admin (obligatorio en producción) |
+| `TOOLSDB_HOST` | No | Si no se usa, usa SQLite local |
+
+### Base de datos en Render
+
+Render no provee MariaDB gratuito. Opciones:
+- **SQLite** (default): funciona sin configuración, datos en el contenedor (se pierden al redeploy)
+- **Render PostgreSQL** (de pago): crear servicio PostgreSQL y cambiar driver en `db.ts`
+- **Supabase/PlanetScale** (gratuito): usar MariaDB/MySQL compatible
+
+### URL de producción (Render)
+
+```
+https://paquerxs.onrender.com
+```
+
+### Notas importantes
+
+- Render duerme el servicio tras 15 min de inactividad (plan free)
+- El primer request tras dormir toma ~30s
+- SQLite: los datos se pierden en cada redeploy (usar BD externa para persistencia)
 
 ## API Endpoints
 

@@ -34,8 +34,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { username, password } = body;
 
     const adminUser = process.env.ADMIN_USER || 'admin';
-    const adminPass = process.env.ADMIN_PASS;
     const isProd = !!process.env.TOOLSDB_HOST;
+    const adminPass = process.env.ADMIN_PASS || (isProd ? '' : 'pacas2025');
 
     if (!adminPass) {
       console.error('ADMIN_PASS not set in environment');
@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (isProd && adminPass === 'pacas2025') {
-      console.error('WARNING: Using default ADMIN_PASS in production!');
+      console.warn('WARNING: Using default ADMIN_PASS in production!');
     }
 
     if (username !== adminUser || password !== adminPass) {
