@@ -86,23 +86,23 @@ pacas-app/
 ### Instalación
 
 ```bash
-git clone <repo-url> pacas-app
-cd pacas-app
-npm install
+git clone <repo-url> paquerxs
+cd paquerxs
+yarn install
 ```
 
 ### Ejecutar en desarrollo
 
 ```bash
-npm run dev
+yarn dev
 # → http://localhost:4321
 ```
 
 ### Build y preview
 
 ```bash
-npm run build
-npm run preview
+yarn build
+yarn preview
 ```
 
 ### Sembrar datos de prueba
@@ -327,10 +327,10 @@ Coordenadas geográficas en el barrio Teusaquillo, Bogotá (lat ~4.62-4.67, lng 
 
 ```bash
 # Desarrollo
-npm run dev
+yarn dev
 
 # Build
-npm run build
+yarn build
 
 # Sembrar datos
 curl -X POST http://localhost:4321/api/seed -H "Origin: http://localhost:4321"
