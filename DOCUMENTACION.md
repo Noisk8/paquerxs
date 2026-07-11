@@ -131,26 +131,7 @@ toolforge webservice --service paquerxs env list
 
 ---
 
-## 6. Despliegue en Render.com
-
-### 6.1. Configurar rama `github`
-
-```bash
-git checkout -b github
-git push origin github
-```
-
-### 6.2. Desplegar
-
-1. En Render: **New > Blueprint** → seleccionar repo GitHub
-2. Render detecta `render.yaml` automáticamente
-3. Configurar variables de entorno:
-   - `ADMIN_USER` = `admin`
-   - `ADMIN_PASS` = `tu contraseña segura`
-
----
-
-## 7. Git Push (GitHub + GitLab)
+## 6. Git Push (GitHub + GitLab)
 
 ### Subir cambios a GitHub (rama `main`)
 
@@ -182,7 +163,7 @@ git push toolforge main
 
 ---
 
-## 8. Arquitectura del Proyecto
+## 7. Arquitectura del Proyecto
 
 ```
 pacas-app/
@@ -193,7 +174,6 @@ pacas-app/
 ├── schema.sql             # Esquema MariaDB
 ├── service.template       # Toolforge buildservice config
 ├── Procfile               # toolforge process type
-├── render.yaml            # Render.com blueprint
 ├── src/
 │   ├── main.js            # Vue entry
 │   ├── App.vue            # Root component
@@ -214,7 +194,7 @@ pacas-app/
 
 ---
 
-## 9. Licencia
+## 8. Licencia
 
 - Código: GPL-3.0-or-later
 - Datos: ODbL-1.0

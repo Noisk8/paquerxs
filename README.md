@@ -17,7 +17,7 @@ Desarrollada por [Wikimedia Colombia](https://meta.wikimedia.org/wiki/Wikimedia_
 | DB Local | SQLite (better-sqlite3) | — |
 | DB Producción | MariaDB (ToolsDB) | 3.x |
 | Mapas | Leaflet.js | 1.9.4 (bundled) |
-| Despliegue | Toolforge + Render.com | — |
+| Despliegue | Wikimedia Toolforge | — |
 
 ## Características
 
@@ -54,8 +54,7 @@ pacas-app/
 │   └── manifest.webmanifest
 ├── schema.sql             # Esquema MariaDB
 ├── service.template       # Toolforge buildservice
-├── Procfile               # Toolforge process
-└── render.yaml            # Render.com blueprint
+└── Procfile               # Toolforge process
 ```
 
 ## Desarrollo Local
@@ -78,11 +77,62 @@ curl -X POST http://localhost:4321/api/seed  # Sembrar 26 pacas
 | `POST` | `/api/auth/login` | No | Login (rate limited) |
 | `GET` | `/api/auth/check` | Cookie | Verificar sesión |
 
+## Ver Datos de la Base de Datos
+
+### En el navegador
+
+Abre directamente estas URLs en tu navegador para ver los datos en JSON:
+
+- **Todas las pacas**: `https://paquerxs.toolforge.org/api/pacas?limit=100`
+- **Estadísticas**: `https://paquerxs.toolforge.org/api/stats`
+- **Paca específica**: `https://paquerxs.toolforge.org/api/pacas/1`
+
+### Con curl (terminal)
+
+```bash
+# Ver todas las pacas
+curl -s 'https://paquerxs.toolforge.org/api/pacas?limit=100' | python3 -m json.tool
+
+# Ver estadísticas (total, colectivos, etc.)
+curl -s https://paquerxs.toolforge.org/api/stats | python3 -m json.tool
+
+# Ver solo 5 pacas
+curl -s 'https://paquerxs.toolforge.org/api/pacas?limit=5' | python3 -m json.tool
+
+# Buscar por nombre
+curl -s 'https://paquerxs.toolforge.org/api/pacas?limit=100' | python3 -c "import json,sys; [print(p['nombre']) for p in json.load(sys.stdin)['data']]"
+```
+
+### Ejemplo de respuesta
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "nombre": "Paquerxs Teusaquillo",
+      "colectivo": "Paquerxs del Parkway",
+      "peso": 150,
+      "fecha_inicio": "2024-03-15",
+      "coordenadas_lat": 4.632,
+      "coordenadas_lng": -74.085,
+      "participantes": 8,
+      "created_at": "2024-03-15T10:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "total": 26,
+    "limit": 100,
+    "offset": 0,
+    "hasMore": false
+  }
+}
+```
+
 ## Despliegue
 
-- **Toolforge** (producción): `paquerxs.toolforge.org`
-- **Render.com** (preview): `paquerxs.onrender.com`
-- Rama `main` → Toolforge, rama `github` → Render
+- **Toolforge**: `https://paquerxs.toolforge.org`
+- Rama `main` → Toolforge
 
 Ver `DOCUMENTACION.md` para comandos detallados de configuración y despliegue.
 
