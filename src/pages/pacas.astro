@@ -1,24 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getAllPacas } from '../lib/db';
 
 export const prerender = false;
-
-let pacas = [];
-try {
-  pacas = await getAllPacas(500, 0);
-} catch (e) {
-  console.error('Error loading pacas:', e);
-}
-
-const pacasJSON = JSON.stringify(pacas);
 ---
 
 <Layout titulo="Inventario de Pacas">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
       <h1 class="text-3xl font-bold text-stone-800 dark:text-stone-100">Inventario de Pacas</h1>
-      <p class="text-stone-500 dark:text-stone-400 mt-1"><span id="contador">{pacas.length}</span> pacas</p>
+      <p class="text-stone-500 dark:text-stone-400 mt-1"><span id="contador">0</span> pacas</p>
     </div>
     <a href="/formulario" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm">
       + Nueva Paca
@@ -76,80 +66,110 @@ const pacasJSON = JSON.stringify(pacas);
     </table>
   </div>
 
+  <div id="cargar-mas" class="hidden text-center py-6">
+    <button id="btn-cargar-mas" class="bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-300 font-medium py-2 px-6 rounded-lg transition-colors cursor-pointer text-sm">
+      Cargar mas pacas
+    </button>
+  </div>
+
   <p id="sin-resultados" class="hidden text-center text-stone-500 dark:text-stone-400 py-12">No se encontraron pacas.</p>
 </Layout>
 
-<script define:vars={{ pacasJSON }}>
-  const pacas = JSON.parse(pacasJSON);
-  let vistaActual = 'tarjetas';
+<script is:inline>
+(function() {
+  var PAGE_SIZE = 20;
+  var allPacas = [];
+  var displayed = 0;
+  var total = 0;
+  var vistaActual = 'tarjetas';
+  var loading = false;
 
-  const tarjetasEl = document.getElementById('vista-tarjetas');
-  const tablaEl = document.getElementById('vista-tabla');
-  const tablaBody = document.getElementById('tabla-body');
-  const sinResultados = document.getElementById('sin-resultados');
-  const contador = document.getElementById('contador');
-  const filtroColectivo = document.getElementById('filtro-colectivo');
-  const filtroNombre = document.getElementById('filtro-nombre');
-  const btnTarjetas = document.getElementById('btn-vista-tarjetas');
-  const btnTabla = document.getElementById('btn-vista-tabla');
+  var tarjetasEl = document.getElementById('vista-tarjetas');
+  var tablaEl = document.getElementById('vista-tabla');
+  var tablaBody = document.getElementById('tabla-body');
+  var sinResultados = document.getElementById('sin-resultados');
+  var contador = document.getElementById('contador');
+  var filtroColectivo = document.getElementById('filtro-colectivo');
+  var filtroNombre = document.getElementById('filtro-nombre');
+  var btnTarjetas = document.getElementById('btn-vista-tarjetas');
+  var btnTabla = document.getElementById('btn-vista-tabla');
+  var cargarMasEl = document.getElementById('cargar-mas');
+  var btnCargarMas = document.getElementById('btn-cargar-mas');
 
   function fmt(fecha) {
     return new Date(fecha).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
-  function filtrar() {
-    const col = filtroColectivo.value;
-    const nom = filtroNombre.value.toLowerCase();
-    return pacas.filter(p => {
-      const matchCol = !col || p.colectivo === col;
-      const matchNom = !nom || p.nombre.toLowerCase().includes(nom);
-      return matchCol && matchNom;
-    });
+  async function fetchPacas(offset) {
+    loading = true;
+    btnCargarMas.textContent = 'Cargando...';
+    btnCargarMas.disabled = true;
+    try {
+      var res = await fetch('/api/pacas?limit=' + PAGE_SIZE + '&offset=' + offset);
+      var data = await res.json();
+      total = data.pagination.total;
+      return data.data;
+    } catch(e) {
+      return [];
+    } finally {
+      loading = false;
+      btnCargarMas.textContent = 'Cargar mas pacas';
+      btnCargarMas.disabled = false;
+    }
   }
 
   function renderTarjetas(lista) {
-    if (lista.length === 0) { tarjetasEl.innerHTML = ''; return; }
-    tarjetasEl.innerHTML = lista.map(p => {
-      const peso = p.peso != null ? p.peso + ' kg' : '-';
-      const part = p.participantes != null ? p.participantes : '-';
-      const coord = p.coordenadas_lat != null ? `<p class="text-stone-500 dark:text-stone-400 text-xs mt-1"><a href="https://www.openstreetmap.org/?mlat=${p.coordenadas_lat}&mlon=${p.coordenadas_lng}#map=16/${p.coordenadas_lat}/${p.coordenadas_lng}" target="_blank" class="text-emerald-600 dark:text-emerald-400 hover:underline">Ver en mapa</a></p>` : '';
-      const info = p.informacion ? `<p class="text-stone-500 dark:text-stone-400 italic text-xs mt-1 border-t border-stone-100 dark:border-stone-700 pt-1">${p.informacion}</p>` : '';
-      return `<article class="bg-white dark:bg-stone-800 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 p-4 hover:shadow-md transition-shadow">
-        <h3 class="font-bold text-emerald-800 dark:text-emerald-400 text-sm leading-tight mb-2">${p.nombre}</h3>
-        <div class="space-y-0.5 text-xs text-stone-600 dark:text-stone-300">
-          <p><b>Colectivo:</b> ${p.colectivo}</p>
-          <p><b>Peso:</b> ${peso}</p>
-          <p><b>Fecha:</b> ${fmt(p.fecha_inicio)}</p>
-          <p><b>Part.:</b> ${part}</p>
-        </div>
-        ${coord}${info}
-        <div class="admin-actions mt-2 hidden">
-          <button data-id="${p.id}" class="btn-eliminar text-xs bg-red-50 dark:bg-red-900 hover:bg-red-100 dark:hover:bg-red-800 text-red-700 dark:text-red-400 px-3 py-1 rounded-lg cursor-pointer">Eliminar</button>
-        </div>
-      </article>`;
+    if (lista.length === 0 && allPacas.length === 0) { tarjetasEl.innerHTML = ''; return; }
+    tarjetasEl.innerHTML = lista.map(function(p) {
+      var peso = p.peso != null ? p.peso + ' kg' : '-';
+      var part = p.participantes != null ? p.participantes : '-';
+      var coord = p.coordenadas_lat != null ? '<p class="text-stone-500 dark:text-stone-400 text-xs mt-1"><a href="https://www.openstreetmap.org/?mlat=' + p.coordenadas_lat + '&mlon=' + p.coordenadas_lng + '#map=16/' + p.coordenadas_lat + '/' + p.coordenadas_lng + '" target="_blank" class="text-emerald-600 dark:text-emerald-400 hover:underline">Ver en mapa</a></p>' : '';
+      var info = p.informacion ? '<p class="text-stone-500 dark:text-stone-400 italic text-xs mt-1 border-t border-stone-100 dark:border-stone-700 pt-1">' + p.informacion + '</p>' : '';
+      return '<article class="bg-white dark:bg-stone-800 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 p-4 hover:shadow-md transition-shadow">' +
+        '<h3 class="font-bold text-emerald-800 dark:text-emerald-400 text-sm leading-tight mb-2">' + p.nombre + '</h3>' +
+        '<div class="space-y-0.5 text-xs text-stone-600 dark:text-stone-300">' +
+          '<p><b>Colectivo:</b> ' + p.colectivo + '</p>' +
+          '<p><b>Peso:</b> ' + peso + '</p>' +
+          '<p><b>Fecha:</b> ' + fmt(p.fecha_inicio) + '</p>' +
+          '<p><b>Part.:</b> ' + part + '</p>' +
+        '</div>' + coord + info +
+        '<div class="admin-actions mt-2 hidden">' +
+          '<button data-id="' + p.id + '" class="btn-eliminar text-xs bg-red-50 dark:bg-red-900 hover:bg-red-100 dark:hover:bg-red-800 text-red-700 dark:text-red-400 px-3 py-1 rounded-lg cursor-pointer">Eliminar</button>' +
+        '</div>' +
+      '</article>';
     }).join('');
   }
 
   function renderTabla(lista) {
-    if (lista.length === 0) { tablaBody.innerHTML = ''; return; }
-    tablaBody.innerHTML = lista.map(p => {
-      const peso = p.peso != null ? p.peso + ' kg' : '-';
-      const part = p.participantes != null ? p.participantes : '-';
-      const info = p.informacion || '';
-      return `<tr class="bg-white dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800">
-        <td class="px-4 py-3 font-medium text-stone-800 dark:text-stone-200 text-sm max-w-[200px] truncate">${p.nombre}</td>
-        <td class="px-4 py-3 text-stone-600 dark:text-stone-400 hidden sm:table-cell">${p.colectivo}</td>
-        <td class="px-4 py-3 text-stone-600 dark:text-stone-400 hidden md:table-cell">${peso}</td>
-        <td class="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">${fmt(p.fecha_inicio)}</td>
-        <td class="px-4 py-3 text-stone-600 dark:text-stone-400 hidden lg:table-cell">${part}</td>
-        <td class="px-4 py-3 text-stone-500 dark:text-stone-400 text-xs max-w-[150px] truncate hidden lg:table-cell">${info}</td>
-        <td class="px-4 py-3 text-right"><button data-id="${p.id}" class="btn-eliminar text-xs bg-red-50 dark:bg-red-900 hover:bg-red-100 dark:hover:bg-red-800 text-red-700 dark:text-red-400 px-2 py-1 rounded-lg cursor-pointer admin-actions hidden">Eliminar</button></td>
-      </tr>`;
+    if (lista.length === 0 && allPacas.length === 0) { tablaBody.innerHTML = ''; return; }
+    tablaBody.innerHTML = lista.map(function(p) {
+      var peso = p.peso != null ? p.peso + ' kg' : '-';
+      var part = p.participantes != null ? p.participantes : '-';
+      var info = p.informacion || '';
+      return '<tr class="bg-white dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800">' +
+        '<td class="px-4 py-3 font-medium text-stone-800 dark:text-stone-200 text-sm max-w-[200px] truncate">' + p.nombre + '</td>' +
+        '<td class="px-4 py-3 text-stone-600 dark:text-stone-400 hidden sm:table-cell">' + p.colectivo + '</td>' +
+        '<td class="px-4 py-3 text-stone-600 dark:text-stone-400 hidden md:table-cell">' + peso + '</td>' +
+        '<td class="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">' + fmt(p.fecha_inicio) + '</td>' +
+        '<td class="px-4 py-3 text-stone-600 dark:text-stone-400 hidden lg:table-cell">' + part + '</td>' +
+        '<td class="px-4 py-3 text-stone-500 dark:text-stone-400 text-xs max-w-[150px] truncate hidden lg:table-cell">' + info + '</td>' +
+        '<td class="px-4 py-3 text-right"><button data-id="' + p.id + '" class="btn-eliminar text-xs bg-red-50 dark:bg-red-900 hover:bg-red-100 dark:hover:bg-red-800 text-red-700 dark:text-red-400 px-2 py-1 rounded-lg cursor-pointer admin-actions hidden">Eliminar</button></td>' +
+      '</tr>';
     }).join('');
   }
 
+  function filtrar() {
+    var col = filtroColectivo.value;
+    var nom = filtroNombre.value.toLowerCase();
+    return allPacas.filter(function(p) {
+      var matchCol = !col || p.colectivo === col;
+      var matchNom = !nom || p.nombre.toLowerCase().indexOf(nom) !== -1;
+      return matchCol && matchNom;
+    });
+  }
+
   function render() {
-    const lista = filtrar();
+    var lista = filtrar();
     contador.textContent = lista.length;
     sinResultados.classList.toggle('hidden', lista.length > 0);
     renderTarjetas(lista);
@@ -167,29 +187,47 @@ const pacasJSON = JSON.stringify(pacas);
 
   async function checkAdmin() {
     try {
-      const res = await fetch('/api/auth/check');
-      const data = await res.json();
+      var res = await fetch('/api/auth/check');
+      var data = await res.json();
       if (data.admin) {
-        document.querySelectorAll('.admin-actions').forEach(el => el.classList.remove('hidden'));
+        document.querySelectorAll('.admin-actions').forEach(function(el) { el.classList.remove('hidden'); });
       }
-    } catch {}
+    } catch(e) {}
   }
 
-  btnTarjetas.addEventListener('click', () => setVista('tarjetas'));
-  btnTabla.addEventListener('click', () => setVista('tabla'));
+  btnTarjetas.addEventListener('click', function() { setVista('tarjetas'); });
+  btnTabla.addEventListener('click', function() { setVista('tabla'); });
   filtroColectivo.addEventListener('change', render);
   filtroNombre.addEventListener('input', render);
 
-  document.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.btn-eliminar');
+  document.addEventListener('click', async function(e) {
+    var btn = e.target.closest('.btn-eliminar');
     if (!btn) return;
     if (!confirm('Eliminar esta paca?')) return;
     try {
-      const res = await fetch('/api/pacas/' + btn.dataset.id, { method: 'DELETE' });
+      var res = await fetch('/api/pacas/' + btn.dataset.id, { method: 'DELETE' });
       if (res.ok) window.location.reload();
       else alert('Error al eliminar');
-    } catch { alert('Error de conexion'); }
+    } catch(err) { alert('Error de conexion'); }
   });
 
-  render();
+  btnCargarMas.addEventListener('click', async function() {
+    if (loading) return;
+    var more = await fetchPacas(displayed);
+    if (more.length > 0) {
+      allPacas = allPacas.concat(more);
+      displayed += more.length;
+      render();
+    }
+    cargarMasEl.classList.toggle('hidden', displayed >= total);
+  });
+
+  (async function init() {
+    var first = await fetchPacas(0);
+    allPacas = first;
+    displayed = first.length;
+    render();
+    cargarMasEl.classList.toggle('hidden', displayed >= total);
+  })();
+})();
 </script>
