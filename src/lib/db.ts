@@ -67,6 +67,18 @@ async function getSqlite() {
     )
   `);
   sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`);
+  const count = sqliteDb.prepare('SELECT COUNT(*) as total FROM pacas').get().total;
+  if (count === 0) {
+    const { pacasSeed } = await import('./seed');
+    const ins = sqliteDb.prepare(
+      `INSERT INTO pacas (nombre, colectivo, peso, fecha_inicio, coordenadas_lat, coordenadas_lng, participantes, informacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    for (const p of pacasSeed) {
+      ins.run(p.nombre, p.colectivo, p.peso, p.fecha_inicio, p.coordenadas_lat, p.coordenadas_lng, p.participantes, p.informacion);
+    }
+    console.log(`[DB] Auto-seeded ${pacasSeed.length} pacas`);
+  }
   return sqliteDb;
 }
 
