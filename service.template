@@ -1,0 +1,4 @@
+type: kubernetes
+containers:
+  - name: app
+    dockerref: docker-registry.tools.wmflabs.org/node20:latest

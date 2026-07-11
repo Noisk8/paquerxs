@@ -1,10 +1,4 @@
----
-import Layout from '../layouts/Layout.astro';
-
-export const prerender = false;
----
-
-<Layout titulo="Sobre el Proyecto">
+<template>
   <article class="max-w-3xl mx-auto">
     <h1 class="text-3xl font-bold mb-2 text-stone-800 dark:text-stone-100">Pacas Digestoras</h1>
     <p class="text-stone-500 dark:text-stone-400 text-lg mt-0">Sistema de descontaminacion ecologica de residuos organicos</p>
@@ -63,16 +57,16 @@ export const prerender = false;
 
       <h2 class="text-2xl font-bold mt-8 text-stone-800 dark:text-stone-100">Esta aplicacion</h2>
       <p>
+        Este proyecto es desarrollado por <strong>Wikimedia Colombia</strong> como parte de las
+        iniciativas de la comunidad para fortalecer el conocimiento abierto y la accion ambiental.
         Esta herramienta web permite a los participantes de las pacas registrar datos sobre
         cada paca: ubicacion geografica, peso, fecha de creacion, colectivo responsable y
         participantes. Los datos se visualizan en un mapa interactivo para monitorear la
         red de pacas digestoras en Teusaquillo.
       </p>
       <p>
-        Este proyecto es desarrollado por <strong>Wikimedia Colombia</strong> como parte de las
-        iniciativas de la comunidad para fortalecer el conocimiento abierto y la accion ambiental.
         Los datos se almacenan en <strong>ToolsDB</strong> (MariaDB) y la aplicacion esta construida
-        con <strong>Astro + Tailwind CSS</strong>, desplegada en
+        con <strong>Vue.js + Express</strong>, desplegada en
         <a href="https://toolforge.org" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Wikimedia Toolforge</a>.
       </p>
 
@@ -86,4 +80,4 @@ export const prerender = false;
       </div>
     </section>
   </article>
-</Layout>
+</template>
