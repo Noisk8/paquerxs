@@ -48,7 +48,7 @@ app.get('/api/pacas', async (req, res) => {
 // POST /api/pacas
 app.post('/api/pacas', async (req, res) => {
   try {
-    const { createPaca } = await import('./src/lib/db.ts');
+    const { createPaca, createMedicion } = await import('./src/lib/db.ts');
     const { nombre, colectivo, peso, fecha_inicio, coordenadas_lat, coordenadas_lng, participantes, informacion } = req.body;
 
     if (!nombre || !colectivo || !fecha_inicio || !peso || !coordenadas_lat || !coordenadas_lng || !participantes || !informacion) {
@@ -65,6 +65,7 @@ app.post('/api/pacas', async (req, res) => {
     if (isNaN(latNum) || isNaN(lngNum)) return res.status(400).json({ error: 'Coordenadas invalidas' });
 
     const id = await createPaca({ nombre, colectivo, peso: pesoNum, fecha_inicio, coordenadas_lat: latNum, coordenadas_lng: lngNum, participantes: partNum, informacion });
+    await createMedicion({ paca_id: id, peso: pesoNum, fecha: fecha_inicio, notas: 'Medicion inicial al registrar paca' });
     res.status(201).json({ id, message: 'Paca creada exitosamente' });
   } catch (error) {
     console.error('Error creating paca:', error);
@@ -121,30 +122,201 @@ app.delete('/api/pacas/:id', async (req, res) => {
   }
 });
 
+// --- Mediciones ---
+// GET /api/pacas/:id/mediciones
+app.get('/api/pacas/:id/mediciones', async (req, res) => {
+  try {
+    const { getMedicionesByPaca } = await import('./src/lib/db.ts');
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalido' });
+    const mediciones = await getMedicionesByPaca(id);
+    res.json(mediciones);
+  } catch (error) {
+    console.error('Error fetching mediciones:', error);
+    res.status(500).json({ error: 'Error al obtener mediciones' });
+  }
+});
+
+// POST /api/pacas/:id/mediciones
+app.post('/api/pacas/:id/mediciones', async (req, res) => {
+  try {
+    const { createMedicion } = await import('./src/lib/db.ts');
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalido' });
+    const { peso, fecha, notas } = req.body;
+    if (!peso || !fecha) {
+      return res.status(400).json({ error: 'Peso y fecha son obligatorios' });
+    }
+    const pesoNum = Number(peso);
+    if (isNaN(pesoNum) || pesoNum < 0) {
+      return res.status(400).json({ error: 'El peso debe ser un numero positivo' });
+    }
+    const id2 = await createMedicion({ paca_id: id, peso: pesoNum, fecha, notas: notas || null });
+    res.status(201).json({ id: id2, message: 'Medicion registrada' });
+  } catch (error) {
+    console.error('Error creating medicion:', error);
+    res.status(500).json({ error: 'Error al registrar medicion' });
+  }
+});
+
+// DELETE /api/mediciones/:id
+app.delete('/api/mediciones/:id', async (req, res) => {
+  try {
+    const { deleteMedicion, validateSession } = await import('./src/lib/db.ts');
+    const token = req.cookies.session;
+    if (!token || !(await validateSession(token))) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalido' });
+    const deleted = await deleteMedicion(id);
+    if (!deleted) return res.status(404).json({ error: 'Medicion no encontrada' });
+    res.json({ message: 'Medicion eliminada' });
+  } catch (error) {
+    console.error('Error deleting medicion:', error);
+    res.status(500).json({ error: 'Error al eliminar medicion' });
+  }
+});
+
+// --- Colectivos ---
+// GET /api/colectivos
+app.get('/api/colectivos', async (req, res) => {
+  try {
+    const { getAllColectivos, getColectivoStats, getColectivos } = await import('./src/lib/db.ts');
+    const [nombres, dbColectivos] = await Promise.all([getAllColectivos(), getColectivos()]);
+    const colorMap = {};
+    for (const c of dbColectivos) {
+      colorMap[c.nombre] = c.color;
+    }
+    const colectivos = [];
+    for (const nombre of nombres) {
+      const stats = await getColectivoStats(nombre);
+      colectivos.push({ nombre, color: colorMap[nombre] || '#68c67c', ...stats });
+    }
+    res.json(colectivos);
+  } catch (error) {
+    console.error('Error fetching colectivos:', error);
+    res.status(500).json({ error: 'Error al obtener colectivos' });
+  }
+});
+
+// GET /api/colectivos/:nombre
+app.get('/api/colectivos/:nombre', async (req, res) => {
+  try {
+    const { getPacasByColectivo, getColectivoStats } = await import('./src/lib/db.ts');
+    const nombre = decodeURIComponent(req.params.nombre);
+    const stats = await getColectivoStats(nombre);
+    if (!stats) return res.status(404).json({ error: 'Colectivo no encontrado' });
+    const pacas = await getPacasByColectivo(nombre);
+    res.json({ nombre, ...stats, pacas });
+  } catch (error) {
+    console.error('Error fetching colectivo:', error);
+    res.status(500).json({ error: 'Error al obtener colectivo' });
+  }
+});
+
+// --- Admin: Colectivos management ---
+// GET /api/admin/colectivos
+app.get('/api/admin/colectivos', async (req, res) => {
+  try {
+    const { validateSession, getColectivos } = await import('./src/lib/db.ts');
+    const token = req.cookies.session;
+    if (!token || !(await validateSession(token))) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const colectivos = await getColectivos();
+    res.json(colectivos);
+  } catch (error) {
+    console.error('Error fetching colectivos:', error);
+    res.status(500).json({ error: 'Error al obtener colectivos' });
+  }
+});
+
+// POST /api/admin/colectivos
+app.post('/api/admin/colectivos', async (req, res) => {
+  try {
+    const { validateSession, createColectivo } = await import('./src/lib/db.ts');
+    const token = req.cookies.session;
+    if (!token || !(await validateSession(token))) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const { nombre, color } = req.body;
+    if (!nombre || !color) {
+      return res.status(400).json({ error: 'Nombre y color son obligatorios' });
+    }
+    try {
+      const id = await createColectivo(nombre, color);
+      res.status(201).json({ id, message: 'Colectivo creado' });
+    } catch (e) {
+      if (e.message?.includes('UNIQUE')) {
+        return res.status(409).json({ error: 'El colectivo ya existe' });
+      }
+      throw e;
+    }
+  } catch (error) {
+    console.error('Error creating colectivo:', error);
+    res.status(500).json({ error: 'Error al crear colectivo' });
+  }
+});
+
+// PUT /api/admin/colectivos/:id
+app.put('/api/admin/colectivos/:id', async (req, res) => {
+  try {
+    const { validateSession, updateColectivo } = await import('./src/lib/db.ts');
+    const token = req.cookies.session;
+    if (!token || !(await validateSession(token))) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalido' });
+    const { nombre, color } = req.body;
+    if (!nombre || !color) {
+      return res.status(400).json({ error: 'Nombre y color son obligatorios' });
+    }
+    const updated = await updateColectivo(id, nombre, color);
+    if (!updated) return res.status(404).json({ error: 'Colectivo no encontrado' });
+    res.json({ message: 'Colectivo actualizado' });
+  } catch (error) {
+    console.error('Error updating colectivo:', error);
+    res.status(500).json({ error: 'Error al actualizar colectivo' });
+  }
+});
+
+// DELETE /api/admin/colectivos/:id
+app.delete('/api/admin/colectivos/:id', async (req, res) => {
+  try {
+    const { validateSession, deleteColectivo } = await import('./src/lib/db.ts');
+    const token = req.cookies.session;
+    if (!token || !(await validateSession(token))) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalido' });
+    const deleted = await deleteColectivo(id);
+    if (!deleted) return res.status(404).json({ error: 'Colectivo no encontrado' });
+    res.json({ message: 'Colectivo eliminado' });
+  } catch (error) {
+    console.error('Error deleting colectivo:', error);
+    res.status(500).json({ error: 'Error al eliminar colectivo' });
+  }
+});
+
 // POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { createSession } = await import('./src/lib/db.ts');
+    const { verifyUser, createSession } = await import('./src/lib/db.ts');
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
     if (isRateLimited(ip)) {
       return res.status(429).json({ error: 'Demasiados intentos. Intenta en 15 minutos.' });
     }
 
     const { username, password } = req.body;
-    const adminUser = process.env.ADMIN_USER || 'admin';
-    const isProd = !!process.env.TOOLSDB_HOST;
-    const adminPass = process.env.ADMIN_PASS || (isProd ? '' : 'pacas2025');
-
-    if (!adminPass) {
-      console.error('ADMIN_PASS not set in environment');
-      return res.status(500).json({ error: 'Configuracion del servidor incompleta' });
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuario y contrasena son obligatorios' });
     }
 
-    if (isProd && adminPass === 'pacas2025') {
-      console.warn('WARNING: Using default ADMIN_PASS in production!');
-    }
-
-    if (username !== adminUser || password !== adminPass) {
+    const valid = await verifyUser(username, password);
+    if (!valid) {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
@@ -181,6 +353,76 @@ app.get('/api/auth/check', async (req, res) => {
     res.json({ admin: valid });
   } catch (error) {
     res.json({ admin: false });
+  }
+});
+
+// --- Admin: User management ---
+// GET /api/admin/users
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const { validateSession, getUsers } = await import('./src/lib/db.ts');
+    const token = req.cookies.session;
+    if (!token || !(await validateSession(token))) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const users = await getUsers();
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+// POST /api/admin/users
+app.post('/api/admin/users', async (req, res) => {
+  try {
+    const { validateSession, createUser } = await import('./src/lib/db.ts');
+    const token = req.cookies.session;
+    if (!token || !(await validateSession(token))) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuario y contrasena son obligatorios' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contrasena debe tener al menos 6 caracteres' });
+    }
+    try {
+      const id = await createUser(username, password);
+      res.status(201).json({ id, message: 'Usuario creado' });
+    } catch (e) {
+      if (e.message?.includes('UNIQUE')) {
+        return res.status(409).json({ error: 'El usuario ya existe' });
+      }
+      throw e;
+    }
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: 'Error al crear usuario' });
+  }
+});
+
+// DELETE /api/admin/users/:id
+app.delete('/api/admin/users/:id', async (req, res) => {
+  try {
+    const { validateSession, deleteUser, getUsers } = await import('./src/lib/db.ts');
+    const token = req.cookies.session;
+    if (!token || !(await validateSession(token))) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalido' });
+    const users = await getUsers();
+    if (users.length <= 1) {
+      return res.status(400).json({ error: 'No puedes eliminar el ultimo usuario admin' });
+    }
+    const deleted = await deleteUser(id);
+    if (!deleted) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({ message: 'Usuario eliminado' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Error al eliminar usuario' });
   }
 });
 
@@ -228,5 +470,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Paquerxs server running on http://0.0.0.0:${PORT}`);
+  console.log(`Wiki Paquera server running on http://0.0.0.0:${PORT}`);
 });

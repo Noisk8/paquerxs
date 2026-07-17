@@ -8,24 +8,18 @@ const loading = ref(true);
 const filtroColectivo = ref('');
 const filtroNombre = ref('');
 const contador = ref(0);
+const coloresMap = ref({});
 
 let map = null;
 let markers = [];
-
-const colores = {
-  'Paquerxs del Parkway': '#059669',
-  'Paquerxs de San Luis': '#2563eb',
-  'Paquerxs del Neuque': '#d97706',
-  'Paquerxs de La Marchita': '#dc2626',
-  'Paquerxs Armenia': '#7c3aed',
-};
 
 function createPopup(p) {
   const peso = p.peso != null ? p.peso + ' kg' : 'N/A';
   const part = p.participantes != null ? p.participantes : 'N/A';
   const fecha = new Date(p.fecha_inicio).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
+  const color = coloresMap.value[p.colectivo] || '#68c67c';
   return `<div style="font-family:system-ui;min-width:200px;">
-    <h3 style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#065f46;">${p.nombre}</h3>
+    <h3 style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:${color};">${p.nombre}</h3>
     <div style="font-size:13px;color:#44403c;line-height:1.6;">
       <p style="margin:0;"><b>Colectivo:</b> ${p.colectivo}</p>
       <p style="margin:0;"><b>Peso:</b> ${peso}</p>
@@ -67,11 +61,21 @@ function renderMarkers() {
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/pacas?limit=500&offset=0');
-    const data = await res.json();
-    pacas.value = data.data.filter(p => p.coordenadas_lat != null && p.coordenadas_lng != null);
+    const [pacasRes, colectivosRes] = await Promise.all([
+      fetch('/api/pacas?limit=500&offset=0'),
+      fetch('/api/colectivos'),
+    ]);
+    const pacasData = await pacasRes.json();
+    pacas.value = pacasData.data.filter(p => p.coordenadas_lat != null && p.coordenadas_lng != null);
+
+    if (colectivosRes.ok) {
+      const colectivos = await colectivosRes.json();
+      for (const c of colectivos) {
+        coloresMap.value[c.nombre] = c.color;
+      }
+    }
   } catch (e) {
-    console.error('Error loading pacas:', e);
+    console.error('Error loading data:', e);
   }
 
   loading.value = false;
@@ -103,11 +107,7 @@ function onFilterChange() {
       <select v-model="filtroColectivo" @change="onFilterChange"
         class="w-full rounded-lg border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 border px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white flex-1 sm:flex-none sm:w-56">
         <option value="">Todos los colectivos</option>
-        <option value="Paquerxs del Parkway">Parkway</option>
-        <option value="Paquerxs de San Luis">San Luis</option>
-        <option value="Paquerxs del Neuque">Neuque</option>
-        <option value="Paquerxs de La Marchita">La Marchita</option>
-        <option value="Paquerxs Armenia">Armenia</option>
+        <option v-for="(color, nombre) in coloresMap" :key="nombre" :value="nombre">{{ nombre.replace('Paquerxs ', '') }}</option>
       </select>
       <input v-model="filtroNombre" @input="onFilterChange" type="text" placeholder="Buscar paca por nombre..."
         class="w-full rounded-lg border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 border px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none flex-1" />
@@ -127,11 +127,9 @@ function onFilterChange() {
   <div id="mapa-container" class="w-full h-[400px] sm:h-[500px] rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 z-0" :class="{ hidden: loading }"></div>
 
   <div class="flex flex-wrap gap-3 mt-4 text-sm text-stone-600 dark:text-stone-400">
-    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-[#059669]"></span> Parkway</span>
-    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-[#2563eb]"></span> San Luis</span>
-    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-[#d97706]"></span> Neuque</span>
-    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-[#dc2626]"></span> La Marchita</span>
-    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-[#7c3aed]"></span> Armenia</span>
+    <span v-for="(color, nombre) in coloresMap" :key="nombre" class="flex items-center gap-1.5">
+      <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: color }"></span> {{ nombre.replace('Paquerxs ', '') }}
+    </span>
   </div>
 </template>
 

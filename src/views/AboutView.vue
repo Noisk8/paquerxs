@@ -67,15 +67,15 @@
       <p>
         Los datos se almacenan en <strong>ToolsDB</strong> (MariaDB) y la aplicacion esta construida
         con <strong>Vue.js + Express</strong>, desplegada en
-        <a href="https://toolforge.org" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Wikimedia Toolforge</a>.
+        <a href="https://toolforge.org" target="_blank" rel="noopener noreferrer" class="text-[#2b5740] dark:text-[#5dd4be] hover:underline">Wikimedia Toolforge</a>.
       </p>
 
-      <div class="mt-8 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800 text-sm">
+      <div class="mt-8 p-4 bg-[#ffcd6e]/10 dark:bg-[#ffcd6e]/5 rounded-xl border border-[#ffcd6e]/30 dark:border-[#ffcd6e]/15 text-sm">
         <p class="m-0">
           <strong>Fuentes:</strong>
-          <a href="https://colombianidadur.wixsite.com/paquerxsbogota" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Paquerxs Bogota</a> ·
-          <a href="https://es.wikipedia.org/wiki/Paca_Digestora_Silva" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Wikipedia</a> ·
-          <a href="https://paquerxs-teusaquillo.wikibase.cloud/" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Wikibase Paquerxs</a>
+          <a href="https://colombianidadur.wixsite.com/paquerxsbogota" target="_blank" rel="noopener noreferrer" class="text-[#2b5740] dark:text-[#68c67c] hover:underline">Paquerxs Bogota</a> ·
+          <a href="https://es.wikipedia.org/wiki/Paca_Digestora_Silva" target="_blank" rel="noopener noreferrer" class="text-[#2b5740] dark:text-[#68c67c] hover:underline">Wikipedia</a> ·
+          <a href="https://paquerxs-teusaquillo.wikibase.cloud/" target="_blank" rel="noopener noreferrer" class="text-[#2b5740] dark:text-[#68c67c] hover:underline">Wikibase Paquerxs</a>
         </p>
       </div>
     </section>

@@ -121,7 +121,9 @@ onMounted(async () => {
     </template>
     <article v-for="p in pacasFiltradas" :key="p.id"
       class="bg-white dark:bg-stone-800 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 p-4 hover:shadow-md transition-shadow">
-      <h3 class="font-bold text-emerald-800 dark:text-emerald-400 text-sm leading-tight mb-2">{{ p.nombre }}</h3>
+      <router-link :to="'/paca/' + p.id">
+        <h3 class="font-bold text-emerald-800 dark:text-emerald-400 text-sm leading-tight mb-2 hover:underline">{{ p.nombre }}</h3>
+      </router-link>
       <div class="space-y-0.5 text-xs text-stone-600 dark:text-stone-300">
         <p><b>Colectivo:</b> {{ p.colectivo }}</p>
         <p><b>Peso:</b> {{ p.peso != null ? p.peso + ' kg' : '-' }}</p>
@@ -133,7 +135,7 @@ onMounted(async () => {
       </p>
       <p v-if="p.informacion" class="text-stone-500 dark:text-stone-400 italic text-xs mt-1 border-t border-stone-100 dark:border-stone-700 pt-1">{{ p.informacion }}</p>
       <div v-if="isAdmin" class="mt-2">
-        <button @click="eliminar(p.id)" class="text-xs bg-red-50 dark:bg-red-900 hover:bg-red-100 dark:hover:bg-red-800 text-red-700 dark:text-red-400 px-3 py-1 rounded-lg cursor-pointer">Eliminar</button>
+        <button @click="eliminar(p.id)" class="text-xs bg-[#fe7763]/10 dark:bg-[#fe7763]/15 hover:bg-[#fe7763]/20 text-[#c94330] dark:text-[#fe7763] px-3 py-1 rounded-lg cursor-pointer transition-colors">Eliminar</button>
       </div>
     </article>
   </div>
@@ -154,14 +156,16 @@ onMounted(async () => {
       </thead>
       <tbody class="divide-y divide-stone-100 dark:divide-stone-700">
         <tr v-for="p in pacasFiltradas" :key="p.id" class="bg-white dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800">
-          <td class="px-4 py-3 font-medium text-stone-800 dark:text-stone-200 text-sm max-w-[200px] truncate">{{ p.nombre }}</td>
+          <td class="px-4 py-3 font-medium text-stone-800 dark:text-stone-200 text-sm max-w-[200px] truncate">
+            <router-link :to="'/paca/' + p.id" class="hover:underline">{{ p.nombre }}</router-link>
+          </td>
           <td class="px-4 py-3 text-stone-600 dark:text-stone-400 hidden sm:table-cell">{{ p.colectivo }}</td>
           <td class="px-4 py-3 text-stone-600 dark:text-stone-400 hidden md:table-cell">{{ p.peso != null ? p.peso + ' kg' : '-' }}</td>
           <td class="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">{{ fmt(p.fecha_inicio) }}</td>
           <td class="px-4 py-3 text-stone-600 dark:text-stone-400 hidden lg:table-cell">{{ p.participantes != null ? p.participantes : '-' }}</td>
           <td class="px-4 py-3 text-stone-500 dark:text-stone-400 text-xs max-w-[150px] truncate hidden lg:table-cell">{{ p.informacion || '' }}</td>
           <td class="px-4 py-3 text-right">
-            <button v-if="isAdmin" @click="eliminar(p.id)" class="text-xs bg-red-50 dark:bg-red-900 hover:bg-red-100 dark:hover:bg-red-800 text-red-700 dark:text-red-400 px-2 py-1 rounded-lg cursor-pointer">Eliminar</button>
+            <button v-if="isAdmin" @click="eliminar(p.id)" class="text-xs bg-[#fe7763]/10 dark:bg-[#fe7763]/15 hover:bg-[#fe7763]/20 text-[#c94330] dark:text-[#fe7763] px-2 py-1 rounded-lg cursor-pointer transition-colors">Eliminar</button>
           </td>
         </tr>
       </tbody>

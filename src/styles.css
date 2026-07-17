@@ -2,6 +2,55 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-emerald-50: #f2f2f2;
+  --color-emerald-100: #d4e8e4;
+  --color-emerald-200: #b8d9cf;
+  --color-emerald-300: #5dd4be;
+  --color-emerald-400: #5dd4be;
+  --color-emerald-500: #68c67c;
+  --color-emerald-600: #68c67c;
+  --color-emerald-700: #4a9a5e;
+  --color-emerald-800: #2b5740;
+  --color-emerald-900: #1e3d2c;
+
+  --color-red-50: #fef2f0;
+  --color-red-100: #fde3de;
+  --color-red-200: #fbc7bd;
+  --color-red-300: #f9a08f;
+  --color-red-400: #fe7763;
+  --color-red-500: #fe7763;
+  --color-red-600: #e55a45;
+  --color-red-700: #c94330;
+  --color-red-800: #a63526;
+  --color-red-900: #8a2e22;
+
+  --color-yellow-50: #fffbeb;
+  --color-yellow-100: #fff3c4;
+  --color-yellow-200: #ffe588;
+  --color-yellow-300: #ffcd6e;
+  --color-yellow-400: #ffcd6e;
+  --color-yellow-500: #f5b731;
+  --color-yellow-600: #d99b0a;
+  --color-yellow-700: #b57a08;
+  --color-yellow-800: #925f0d;
+  --color-yellow-900: #784e0e;
+
+  --color-stone-50: #f2f2f2;
+  --color-stone-100: #e8e8e8;
+  --color-stone-200: #d4d4d4;
+  --color-stone-300: #b8b8b8;
+  --color-stone-400: #9a9a9a;
+  --color-stone-500: #7a7a7a;
+  --color-stone-600: #5c5c5c;
+  --color-stone-700: #444444;
+  --color-stone-800: #2e2e2e;
+  --color-stone-900: #1a1a1a;
+
+  --color-accent-warm: #ffcd6e;
+  --color-accent-coral: #fe7763;
+}
+
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

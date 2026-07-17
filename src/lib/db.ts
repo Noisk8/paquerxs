@@ -1,6 +1,13 @@
-import type { Paca } from './types';
+import type { Paca, Medicion, Colectivo } from './types';
 
-export type { Paca };
+export type { Paca, Medicion, Colectivo };
+
+export interface User {
+  id: number;
+  username: string;
+  password_hash: string;
+  created_at: string;
+}
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -67,6 +74,49 @@ async function getSqlite() {
     )
   `);
   sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`);
+  sqliteDb.exec(`
+    CREATE TABLE IF NOT EXISTS mediciones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paca_id INTEGER NOT NULL,
+      peso REAL NOT NULL,
+      fecha TEXT NOT NULL,
+      notas TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (paca_id) REFERENCES pacas(id)
+    )
+  `);
+  sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_mediciones_paca ON mediciones(paca_id)`);
+  sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_mediciones_fecha ON mediciones(fecha)`);
+  sqliteDb.exec(`
+    CREATE TABLE IF NOT EXISTS colectivos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL UNIQUE,
+      color TEXT NOT NULL DEFAULT '#68c67c',
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  sqliteDb.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  const userCount = sqliteDb.prepare('SELECT COUNT(*) as total FROM users').get().total;
+  if (userCount === 0) {
+    try {
+      const crypto = await import('crypto');
+      const { promisify } = await import('util');
+      const scrypt = promisify(crypto.scrypt);
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = (await scrypt('pacas2025', salt, 64)).toString('hex');
+      sqliteDb.prepare('INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)').run('admin', `${salt}:${hash}`);
+      console.log('[DB] Default admin user created (admin/pacas2025)');
+    } catch (e) {
+      // User might already exist from concurrent init
+    }
+  }
   const count = sqliteDb.prepare('SELECT COUNT(*) as total FROM pacas').get().total;
   if (count === 0) {
     const { pacasSeed } = await import('./seed');
@@ -78,6 +128,23 @@ async function getSqlite() {
       ins.run(p.nombre, p.colectivo, p.peso, p.fecha_inicio, p.coordenadas_lat, p.coordenadas_lng, p.participantes, p.informacion);
     }
     console.log(`[DB] Auto-seeded ${pacasSeed.length} pacas`);
+  }
+  // Auto-seed colectivos from existing pacas
+  const existingColectivos = sqliteDb.prepare('SELECT COUNT(*) as total FROM colectivos').get().total;
+  if (existingColectivos === 0) {
+    const colectivoNames = sqliteDb.prepare('SELECT DISTINCT colectivo FROM pacas').all() as { colectivo: string }[];
+    const defaultColors: Record<string, string> = {
+      'Paquerxs del Parkway': '#68c67c',
+      'Paquerxs de San Luis': '#5dd4be',
+      'Paquerxs del Neuque': '#ffcd6e',
+      'Paquerxs de La Marchita': '#fe7763',
+      'Paquerxs Armenia': '#2b5740',
+    };
+    for (const { colectivo } of colectivoNames) {
+      const color = defaultColors[colectivo] || '#68c67c';
+      sqliteDb.prepare('INSERT OR IGNORE INTO colectivos (nombre, color) VALUES (?, ?)').run(colectivo, color);
+    }
+    console.log(`[DB] Auto-seeded ${colectivoNames.length} colectivos`);
   }
   return sqliteDb;
 }
@@ -127,6 +194,45 @@ async function getMariaDb() {
         INDEX idx_sessions_expires (expires_at)
       )
     `);
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS mediciones (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        paca_id INT NOT NULL,
+        peso DECIMAL(10,2) NOT NULL,
+        fecha DATE NOT NULL,
+        notas TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (paca_id) REFERENCES pacas(id),
+        INDEX idx_mediciones_paca (paca_id),
+        INDEX idx_mediciones_fecha (fecha)
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS colectivos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(255) NOT NULL UNIQUE,
+        color VARCHAR(7) NOT NULL DEFAULT '#68c67c',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+    const userCount = (await conn.query('SELECT COUNT(*) as total FROM users'))[0].total;
+    if (userCount === 0) {
+      const crypto = await import('crypto');
+      const { promisify } = await import('util');
+      const scrypt = promisify(crypto.scrypt);
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = (await scrypt('pacas2025', salt, 64)).toString('hex');
+      await conn.query('INSERT INTO users (username, password_hash) VALUES (?, ?)', ['admin', `${salt}:${hash}`]);
+      console.log('[DB] Default admin user created (admin/pacas2025)');
+    }
     conn.release();
     mariadbReady = true;
   }
@@ -294,4 +400,227 @@ export async function cleanupExpiredSessions(): Promise<number> {
   const db = await getMariaDb();
   const r = await db.query('DELETE FROM sessions WHERE expires_at < ?', [now]);
   return r.affectedRows;
+}
+
+// --- Users ---
+export async function verifyUser(username: string, password: string): Promise<boolean> {
+  const crypto = await import('crypto');
+  const { promisify } = await import('util');
+  const scrypt = promisify(crypto.scrypt);
+
+  if (isLocal()) {
+    const db = await getSqlite();
+    const row = db.prepare('SELECT password_hash FROM users WHERE username = ?').get(username) as any;
+    if (!row) return false;
+    const [salt, hash] = row.password_hash.split(':');
+    const verify = (await scrypt(password, salt, 64)).toString('hex');
+    return verify === hash;
+  }
+  const db = await getMariaDb();
+  const rows = await db.query('SELECT password_hash FROM users WHERE username = ?', [username]) as any[];
+  if (rows.length === 0) return false;
+  const [salt, hash] = rows[0].password_hash.split(':');
+  const verify = (await scrypt(password, salt, 64)).toString('hex');
+  return verify === hash;
+}
+
+export async function getUsers(): Promise<{ id: number; username: string; created_at: string }[]> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('SELECT id, username, created_at FROM users ORDER BY id').all();
+  }
+  const db = await getMariaDb();
+  const rows = await db.query('SELECT id, username, created_at FROM users ORDER BY id');
+  return rows as unknown as { id: number; username: string; created_at: string }[];
+}
+
+export async function createUser(username: string, password: string): Promise<number> {
+  const crypto = await import('crypto');
+  const { promisify } = await import('util');
+  const scrypt = promisify(crypto.scrypt);
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = (await scrypt(password, salt, 64)).toString('hex');
+  const passwordHash = `${salt}:${hash}`;
+
+  if (isLocal()) {
+    const db = await getSqlite();
+    const r = db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(username, passwordHash);
+    return Number(r.lastInsertRowid);
+  }
+  const db = await getMariaDb();
+  const r = await db.query('INSERT INTO users (username, password_hash) VALUES (?, ?)', [username, passwordHash]);
+  return Number(r.insertId);
+}
+
+export async function deleteUser(id: number): Promise<boolean> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('DELETE FROM users WHERE id = ?').run(id).changes > 0;
+  }
+  const db = await getMariaDb();
+  const r = await db.query('DELETE FROM users WHERE id = ?', [id]);
+  return r.affectedRows > 0;
+}
+
+// --- Mediciones ---
+export async function getMedicionesByPaca(pacaId: number): Promise<Medicion[]> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('SELECT * FROM mediciones WHERE paca_id = ? ORDER BY fecha ASC').all(pacaId) as Medicion[];
+  }
+  const db = await getMariaDb();
+  const rows = await db.query('SELECT * FROM mediciones WHERE paca_id = ? ORDER BY fecha ASC', [pacaId]);
+  return rows as unknown as Medicion[];
+}
+
+export async function createMedicion(medicion: Omit<Medicion, 'id' | 'created_at'>): Promise<number> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    const r = db.prepare(
+      'INSERT INTO mediciones (paca_id, peso, fecha, notas) VALUES (?, ?, ?, ?)'
+    ).run(medicion.paca_id, medicion.peso, medicion.fecha, medicion.notas || null);
+    return Number(r.lastInsertRowid);
+  }
+  const db = await getMariaDb();
+  const r = await db.query(
+    'INSERT INTO mediciones (paca_id, peso, fecha, notas) VALUES (?, ?, ?, ?)',
+    [medicion.paca_id, medicion.peso, medicion.fecha, medicion.notas || null]
+  );
+  return Number(r.insertId);
+}
+
+export async function deleteMedicion(id: number): Promise<boolean> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('DELETE FROM mediciones WHERE id = ?').run(id).changes > 0;
+  }
+  const db = await getMariaDb();
+  const r = await db.query('DELETE FROM mediciones WHERE id = ?', [id]);
+  return r.affectedRows > 0;
+}
+
+export async function getPacasByColectivo(colectivo: string): Promise<Paca[]> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('SELECT * FROM pacas WHERE colectivo = ? ORDER BY fecha_inicio DESC').all(colectivo) as Paca[];
+  }
+  const db = await getMariaDb();
+  const rows = await db.query('SELECT * FROM pacas WHERE colectivo = ? ORDER BY fecha_inicio DESC', [colectivo]);
+  return rows as unknown as Paca[];
+}
+
+export async function getColectivoStats(colectivo: string): Promise<{ total_pacas: number; total_kg: number; kg_por_paca: number; primera_fecha: string; ultima_fecha: string } | null> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    const row = db.prepare(`
+      SELECT
+        COUNT(*) as total_pacas,
+        COALESCE(SUM(m.peso), 0) as total_kg,
+        CASE WHEN COUNT(*) > 0 THEN ROUND(COALESCE(SUM(m.peso), 0) * 1.0 / COUNT(*), 2) ELSE 0 END as kg_por_paca,
+        MIN(m.fecha) as primera_fecha,
+        MAX(m.fecha) as ultima_fecha
+      FROM pacas p
+      LEFT JOIN mediciones m ON m.paca_id = p.id
+      WHERE p.colectivo = ?
+    `).get(colectivo) as any;
+    return row && row.total_pacas > 0 ? row : null;
+  }
+  const db = await getMariaDb();
+  const rows = await db.query(`
+    SELECT
+      COUNT(*) as total_pacas,
+      COALESCE(SUM(m.peso), 0) as total_kg,
+      CASE WHEN COUNT(*) > 0 THEN ROUND(COALESCE(SUM(m.peso), 0) * 1.0 / COUNT(*), 2) ELSE 0 END as kg_por_paca,
+      MIN(m.fecha) as primera_fecha,
+      MAX(m.fecha) as ultima_fecha
+    FROM pacas p
+    LEFT JOIN mediciones m ON m.paca_id = p.id
+    WHERE p.colectivo = ?
+  `, [colectivo]);
+  const row = rows[0] as any;
+  return row && row.total_pacas > 0 ? row : null;
+}
+
+export async function getAllColectivos(): Promise<string[]> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    const rows = db.prepare('SELECT DISTINCT colectivo FROM pacas ORDER BY colectivo').all() as { colectivo: string }[];
+    return rows.map(r => r.colectivo);
+  }
+  const db = await getMariaDb();
+  const rows = await db.query('SELECT DISTINCT colectivo FROM pacas ORDER BY colectivo') as { colectivo: string }[];
+  return rows.map(r => r.colectivo);
+}
+
+// --- Colectivos (tabla normalizada) ---
+export async function getColectivos(): Promise<Colectivo[]> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('SELECT * FROM colectivos ORDER BY nombre').all() as Colectivo[];
+  }
+  const db = await getMariaDb();
+  const rows = await db.query('SELECT * FROM colectivos ORDER BY nombre');
+  return rows as unknown as Colectivo[];
+}
+
+export async function getColectivoById(id: number): Promise<Colectivo | null> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('SELECT * FROM colectivos WHERE id = ?').get(id) || null;
+  }
+  const db = await getMariaDb();
+  const rows = await db.query('SELECT * FROM colectivos WHERE id = ?', [id]);
+  return rows.length > 0 ? rows[0] : null;
+}
+
+export async function getColectivoByNombre(nombre: string): Promise<Colectivo | null> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('SELECT * FROM colectivos WHERE nombre = ?').get(nombre) || null;
+  }
+  const db = await getMariaDb();
+  const rows = await db.query('SELECT * FROM colectivos WHERE nombre = ?', [nombre]);
+  return rows.length > 0 ? rows[0] : null;
+}
+
+export async function createColectivo(nombre: string, color: string): Promise<number> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    const r = db.prepare('INSERT INTO colectivos (nombre, color) VALUES (?, ?)').run(nombre, color);
+    return Number(r.lastInsertRowid);
+  }
+  const db = await getMariaDb();
+  const r = await db.query('INSERT INTO colectivos (nombre, color) VALUES (?, ?)', [nombre, color]);
+  return Number(r.insertId);
+}
+
+export async function updateColectivo(id: number, nombre: string, color: string): Promise<boolean> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('UPDATE colectivos SET nombre = ?, color = ? WHERE id = ?').run(nombre, color, id).changes > 0;
+  }
+  const db = await getMariaDb();
+  const r = await db.query('UPDATE colectivos SET nombre = ?, color = ? WHERE id = ?', [nombre, color, id]);
+  return r.affectedRows > 0;
+}
+
+export async function deleteColectivo(id: number): Promise<boolean> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    return db.prepare('DELETE FROM colectivos WHERE id = ?').run(id).changes > 0;
+  }
+  const db = await getMariaDb();
+  const r = await db.query('DELETE FROM colectivos WHERE id = ?', [id]);
+  return r.affectedRows > 0;
+}
+
+export async function getColectivoColor(nombre: string): Promise<string | null> {
+  if (isLocal()) {
+    const db = await getSqlite();
+    const row = db.prepare('SELECT color FROM colectivos WHERE nombre = ?').get(nombre) as any;
+    return row ? row.color : null;
+  }
+  const db = await getMariaDb();
+  const rows = await db.query('SELECT color FROM colectivos WHERE nombre = ?', [nombre]) as any[];
+  return rows.length > 0 ? rows[0].color : null;
 }

@@ -3,13 +3,8 @@ import { ref, onMounted, nextTick } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const colectivos = [
-  'Paquerxs del Parkway',
-  'Paquerxs de San Luis',
-  'Paquerxs del Neuque',
-  'Paquerxs de La Marchita',
-  'Paquerxs Armenia',
-];
+const colectivos = ref([]);
+const formLoading = ref(true);
 
 const form = ref({
   nombre: '',
@@ -55,7 +50,7 @@ function placeMarker(lat, lng, acc) {
     updateInputs(pos.lat, pos.lng);
   });
   if (acc) {
-    accuracyCircle = L.circle([lat, lng], { radius: acc, color: '#059669', fillOpacity: 0.08, weight: 1 }).addTo(map);
+    accuracyCircle = L.circle([lat, lng], { radius: acc, color: '#68c67c', fillOpacity: 0.08, weight: 1 }).addTo(map);
   }
   map.setView([lat, lng], 16);
 }
@@ -175,6 +170,14 @@ async function submitForm() {
 }
 
 onMounted(async () => {
+  try {
+    const res = await fetch('/api/colectivos');
+    if (res.ok) {
+      const data = await res.json();
+      colectivos.value = data.map(c => c.nombre);
+    }
+  } catch (e) {}
+
   await nextTick();
   map = L.map('mapa-form', { zoomControl: false }).setView([4.64, -74.075], 14);
   L.control.zoom({ position: 'topright' }).addTo(map);
@@ -186,6 +189,8 @@ onMounted(async () => {
   const defaultIcon = L.icon({ iconUrl: '/icons/paca.png', iconSize: [32, 32], iconAnchor: [16, 32], className: 'form-marker' });
   marker = L.marker([4.64, -74.075], { draggable: true, icon: defaultIcon }).addTo(map);
   marker.on('dragend', () => { const pos = marker.getLatLng(); updateInputs(pos.lat, pos.lng); });
+
+  formLoading.value = false;
 
   if (navigator.geolocation) {
     setEstado('Buscando tu ubicacion...', 'info');
@@ -203,7 +208,34 @@ onMounted(async () => {
 </script>
 
 <template>
-  <form @submit.prevent="submitForm" class="space-y-5 max-w-2xl mx-auto" novalidate>
+  <div class="max-w-2xl mx-auto">
+    <div v-if="formLoading" class="space-y-5">
+      <div class="h-8 w-48 rounded bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+      <div class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 p-6 space-y-4">
+        <div class="space-y-1">
+          <div class="h-4 w-32 rounded bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+          <div class="h-10 w-full rounded-lg bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+        </div>
+        <div class="space-y-1">
+          <div class="h-4 w-24 rounded bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+          <div class="h-10 w-full rounded-lg bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <div class="h-4 w-20 rounded bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+            <div class="h-10 w-full rounded-lg bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+          </div>
+          <div class="space-y-1">
+            <div class="h-4 w-28 rounded bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+            <div class="h-10 w-full rounded-lg bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+          </div>
+        </div>
+        <div class="h-64 w-full rounded-lg bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+        <div class="h-10 w-full rounded-lg bg-stone-200 dark:bg-stone-700 skeleton-pulse"></div>
+      </div>
+    </div>
+
+    <form v-else @submit.prevent="submitForm" class="space-y-5" novalidate>
     <h2 class="text-2xl font-bold text-emerald-800 dark:text-emerald-400 mb-6">Registrar Nueva Paca</h2>
 
     <div>
@@ -249,7 +281,7 @@ onMounted(async () => {
           {{ btnUbicacionTxt }}
         </button>
       </div>
-      <p v-if="ubicacionEstado" :class="['text-xs', ubicacionTipo === 'ok' ? 'text-emerald-600 dark:text-emerald-400' : ubicacionTipo === 'error' ? 'text-red-600 dark:text-red-400' : 'text-stone-500 dark:text-stone-400']">{{ ubicacionEstado }}</p>
+      <p v-if="ubicacionEstado" :class="['text-xs', ubicacionTipo === 'ok' ? 'text-[#68c67c]' : ubicacionTipo === 'error' ? 'text-[#fe7763]' : 'text-stone-500 dark:text-stone-400']">{{ ubicacionEstado }}</p>
 
       <div id="mapa-form" class="w-full h-[250px] sm:h-[300px] rounded-lg border border-stone-300 dark:border-stone-600 z-0"></div>
       <p class="text-xs text-stone-400 dark:text-stone-500 italic">Arrastra el pin para ajustar la posicion exacta</p>
@@ -288,7 +320,7 @@ onMounted(async () => {
     </div>
 
     <div v-if="mensaje.text"
-      :class="['rounded-lg p-4 text-sm', mensaje.type === 'ok' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300']">
+      :class="['rounded-lg p-4 text-sm', mensaje.type === 'ok' ? 'bg-[#68c67c]/15 dark:bg-[#68c67c]/10 text-[#2b5740] dark:text-[#68c67c]' : 'bg-[#fe7763]/15 dark:bg-[#fe7763]/10 text-[#a63526] dark:text-[#fe7763]']">
       {{ mensaje.text }}
     </div>
 
@@ -297,9 +329,10 @@ onMounted(async () => {
       {{ submitting ? 'Guardando...' : 'Guardar Paca' }}
     </button>
   </form>
+  </div>
 </template>
 
 <style>
-#mapa-form { background: #e5e5e5; }
+#mapa-form { background: #d4e8e4; }
 .form-marker { background: transparent !important; border: none !important; }
 </style>

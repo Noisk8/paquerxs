@@ -38,7 +38,7 @@
       <p>
         Esta aplicacion se adhiere a los principios de <strong>datos abiertos</strong>. Los datos
         publicados estan disponibles bajo la licencia
-        <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Open Data Commons Open Database License (ODbL)</a>,
+        <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener noreferrer" class="text-[#2b5740] dark:text-[#5dd4be] hover:underline">Open Data Commons Open Database License (ODbL)</a>,
         lo que permite:
       </p>
       <ul class="list-disc pl-6 space-y-1">
@@ -55,7 +55,7 @@
         Los datos estan disponibles a traves de la API publica de la aplicacion
         (<code class="bg-stone-100 dark:bg-stone-700 px-1.5 py-0.5 rounded text-sm">GET /api/pacas</code>)
         y en la
-        <a href="https://paquerxs-teusaquillo.wikibase.cloud/" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Wikibase Paquerxs</a>.
+        <a href="https://paquerxs-teusaquillo.wikibase.cloud/" target="_blank" rel="noopener noreferrer" class="text-[#2b5740] dark:text-[#5dd4be] hover:underline">Wikibase Paquerxs</a>.
       </p>
 
       <h2 class="text-2xl font-bold mt-8 text-stone-800 dark:text-stone-100">4. Responsabilidad</h2>
@@ -77,10 +77,10 @@
       <p>
         Para preguntas sobre estos terminos o sobre el uso de los datos, contacta a
         <strong>Wikimedia Colombia</strong> o a los colectivos de
-        <a href="https://colombianidadur.wixsite.com/paquerxsbogota" target="_blank" rel="noopener noreferrer" class="text-emerald-600 dark:text-emerald-400 hover:underline">Paquerxs Bogota</a>.
+        <a href="https://colombianidadur.wixsite.com/paquerxsbogota" target="_blank" rel="noopener noreferrer" class="text-[#2b5740] dark:text-[#5dd4be] hover:underline">Paquerxs Bogota</a>.
       </p>
 
-      <div class="mt-8 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800 text-sm">
+      <div class="mt-8 p-4 bg-[#ffcd6e]/10 dark:bg-[#ffcd6e]/5 rounded-xl border border-[#ffcd6e]/30 dark:border-[#ffcd6e]/15 text-sm">
         <p class="m-0">
           <strong>Fecha de vigencia:</strong> Julio 2026 &middot;
           <strong>Licencia del codigo:</strong> GPL-3.0-or-later &middot;
