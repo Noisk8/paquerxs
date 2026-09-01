@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-const BASE = 'http://localhost:4321';
+const PORT = 4325;
+const BASE = `http://localhost:${PORT}`;
 
 let serverProcess: any;
 
@@ -8,9 +9,10 @@ beforeAll(async () => {
   const { execSync } = await import('child_process');
   execSync('yarn build', { cwd: process.cwd(), stdio: 'pipe' });
   const { spawn } = await import('child_process');
-  serverProcess = spawn('node', ['dist/server/entry.mjs'], {
+  serverProcess = spawn('yarn', ['start'], {
     cwd: process.cwd(),
     stdio: 'pipe',
+    env: { ...process.env, PORT: String(PORT) },
   });
   await new Promise(r => setTimeout(r, 2000));
 });

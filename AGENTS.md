@@ -1,22 +1,15 @@
 ## Development
 
-When starting the dev server, use background mode:
+This application uses Vue 3, Vite, and Express.
+
+For local frontend development, run:
 
 ```
-astro dev --background
+yarn dev
 ```
 
-Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
+For an end-to-end production check, run `yarn build` and then `yarn start`.
 
-## Documentation
+## Deployment
 
-Full documentation: https://docs.astro.build
-
-Consult these guides before working on related tasks:
-
-- [Adding pages, dynamic routes, or middleware](https://docs.astro.build/en/guides/routing/)
-- [Working with Astro components](https://docs.astro.build/en/basics/astro-components/)
-- [Using React, Vue, Svelte, or other framework components](https://docs.astro.build/en/guides/framework-components/)
-- [Adding or managing content](https://docs.astro.build/en/guides/content-collections/)
-- [Adding styles or using Tailwind](https://docs.astro.build/en/guides/styling/)
-- [Supporting multiple languages](https://docs.astro.build/en/guides/internationalization/)
+Toolforge runs the Express server through `yarn start`; it serves the Vite output in `dist/client` and the `/api` routes from `server.js`.
